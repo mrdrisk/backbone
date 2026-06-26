@@ -1,0 +1,10 @@
+targets:
+  - name: my-app-data
+    type: directory
+    source: ./test-data
+    destination: ./backups
+
+  - name: my-app-volume
+    type: volume
+    source: my_docker_volume_name
+    destination: ./backups
