@@ -28,3 +28,9 @@ python -m backbone.cli backup --config config.yaml
 - [ ] Notifications + retention policy
 - [ ] Dockerized CLI + CI pipeline
 
+- [x] Local backup engine (directory + volume)
+- [ ] Encryption + S3/B2 upload
+- [ ] Postgres/SQLite-aware backups
+- [ ] Scheduling + restore command
+- [ ] Notifications + retention policy
+- [ ] Dockerized CLI + CI pipeline
