@@ -4,3 +4,5 @@ __pycache__/
 backups/
 config.yaml
 .env
+backbone-key.txt
+*.age
