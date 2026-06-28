@@ -12,7 +12,7 @@ A simple, self-hostable backup-and-restore orchestrator for Docker volumes, dire
 
 ## Status
 
-Milestones 1-3 complete: local backups, encryption + remote storage, and database-aware backups are all working end-to-end. Scheduling, a restore command, notifications, retention policy, and containerization are still in progress.
+Milestones 1-4 complete: local backups, encryption + remote storage, database-aware backups, scheduling, and restore are all working end-to-end. Notifications, retention policy, and containerization are still in progress.
 
 ## Quick start
 
