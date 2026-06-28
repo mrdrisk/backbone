@@ -1,4 +1,3 @@
-import time
 import click
 from apscheduler.schedulers.blocking import BlockingScheduler
 from .config import load_config
@@ -15,7 +14,7 @@ def run_scheduled_backup(config_path):
 
 
 def start_scheduler(config_path, cron_expression):
-    cfg = load_config(config_path)
+    load_config(config_path)  # validate config before starting
     scheduler = BlockingScheduler()
 
     # cron_expression format: "minute hour day month day_of_week"

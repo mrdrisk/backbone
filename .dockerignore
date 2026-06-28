@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+backups/
+test-data/
+test.db
+.env
+backbone-key.txt
+.git/
+.gitignore

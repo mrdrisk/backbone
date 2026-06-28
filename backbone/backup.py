@@ -45,7 +45,6 @@ def backup_postgres(target):
     container if the DB itself is in a container, otherwise locally)."""
     os.makedirs(target["destination"], exist_ok=True)
     archive_name = f"{target['name']}-{_timestamp()}.sql"
-    dest_abs = os.path.abspath(target["destination"])
     dump_path = os.path.join(target["destination"], archive_name)
 
     host = target.get("host", "localhost")
@@ -85,7 +84,6 @@ def backup_sqlite(target):
     sqlite3 .backup command, then compresses it."""
     os.makedirs(target["destination"], exist_ok=True)
     snapshot_name = f"{target['name']}-{_timestamp()}.db"
-    dest_abs = os.path.abspath(target["destination"])
     snapshot_path = os.path.join(target["destination"], snapshot_name)
 
     cmd = ["sqlite3", target["source"], f".backup '{snapshot_path}'"]
