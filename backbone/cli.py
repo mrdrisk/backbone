@@ -6,6 +6,8 @@ from .config import load_config
 from .backup import run_backup, run_restore
 from .encrypt import encrypt_file, decrypt_file
 from .remote import upload_file, download_file
+from .notify import send_discord_notification
+from .retention import apply_retention
 
 load_dotenv()
 
@@ -22,6 +24,8 @@ def backup(config):
     """Run backups for all targets defined in the config file."""
     cfg = load_config(config)
     remote_cfg = cfg.get("remote", {})
+
+    results = []
 
     for target in cfg["targets"]:
         click.echo(f"Backing up '{target['name']}' ({target['type']})...")
@@ -40,8 +44,35 @@ def backup(config):
                 remote_path = upload_file(path, remote_cfg.get("bucket"))
                 click.echo(click.style(f"  -> Uploaded: {remote_path}", fg="green"))
 
+            retention_cfg = target.get("retention", {})
+            if retention_cfg:
+                deleted = apply_retention(
+                    target,
+                    keep_last=retention_cfg.get("keep_last", 5),
+                    max_age_days=retention_cfg.get("max_age_days"),
+                )
+                if deleted:
+                    click.echo(click.style(f"  -> Retention: deleted {len(deleted)} old backup(s)", fg="yellow"))
+
+            results.append((target["name"], True, None))
+
         except Exception as e:
             click.echo(click.style(f"  -> Failed: {e}", fg="red"))
+            results.append((target["name"], False, str(e)))
+
+    success_count = sum(1 for _, ok, _ in results if ok)
+    fail_count = len(results) - success_count
+    overall_success = fail_count == 0
+
+    lines = []
+    for name, ok, error in results:
+        if ok:
+            lines.append(f"✅ {name}")
+        else:
+            lines.append(f"❌ {name}: {error}")
+
+    summary = f"**{success_count} succeeded, {fail_count} failed**\n\n" + "\n".join(lines)
+    send_discord_notification(summary, success=overall_success)
 
 
 @cli.command()
@@ -71,7 +102,6 @@ def restore(config, target, from_remote, file):
         backup_path = local_path
 
     if not backup_path:
-        # Auto-detect the most recent local backup for this target
         pattern = os.path.join(target_cfg["destination"], f"{target}-*")
         matches = sorted(glob.glob(pattern), reverse=True)
         if not matches:
@@ -82,10 +112,9 @@ def restore(config, target, from_remote, file):
     click.echo(f"Restoring '{target}' from: {backup_path}")
 
     try:
-        # Decrypt if needed
         if backup_path.endswith(".age"):
             identity_file = os.environ.get("AGE_KEY_FILE", "backbone-key.txt")
-            decrypted_path = backup_path[:-4]  # strip .age
+            decrypted_path = backup_path[:-4]
             decrypt_file(backup_path, identity_file, decrypted_path)
             click.echo(click.style(f"  -> Decrypted: {decrypted_path}", fg="green"))
             backup_path = decrypted_path
@@ -96,6 +125,7 @@ def restore(config, target, from_remote, file):
     except Exception as e:
         click.echo(click.style(f"  -> Failed: {e}", fg="red"))
 
+
 @cli.command()
 @click.option("--config", default="config.yaml", help="Path to config YAML file")
 @click.option("--cron", required=True, help="Cron expression: 'minute hour day month day_of_week' (e.g. '0 2 * * *' for daily at 2am)")
@@ -103,6 +133,7 @@ def schedule(config, cron):
     """Start a scheduler that runs backups automatically on a cron schedule."""
     from .scheduler import start_scheduler
     start_scheduler(config, cron)
+
 
 if __name__ == "__main__":
     cli()

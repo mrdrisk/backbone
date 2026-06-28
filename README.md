@@ -12,7 +12,7 @@ A simple, self-hostable backup-and-restore orchestrator for Docker volumes, dire
 
 ## Status
 
-Milestones 1-4 complete: local backups, encryption + remote storage, database-aware backups, scheduling, and restore are all working end-to-end. Notifications, retention policy, and containerization are still in progress.
+Milestones 1-5 complete: local backups, encryption + remote storage, database-aware backups, scheduling, restore, Discord notifications, and retention policy are all working end-to-end. Containerization and a CI pipeline (Milestone 6) are still in progress.
 
 ## Quick start
 
@@ -93,5 +93,5 @@ Cron format: `minute hour day month day_of_week`. Example: `"0 2 * * *"` runs da
 - [x] Encryption (age) + remote storage (Backblaze B2)
 - [x] Postgres/SQLite-aware backups
 - [x] Scheduling + restore command
-- [ ] Notifications + retention policy
+- [x] Notifications + retention policy
 - [ ] Dockerized CLI + CI pipeline
