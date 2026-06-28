@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tarfile
+import shutil
 from datetime import datetime
 
 
@@ -39,12 +40,75 @@ def backup_volume(target):
     return os.path.join(target["destination"], archive_name)
 
 
+def backup_postgres(target):
+    """Dumps a Postgres database using pg_dump (run inside a throwaway
+    container if the DB itself is in a container, otherwise locally)."""
+    os.makedirs(target["destination"], exist_ok=True)
+    archive_name = f"{target['name']}-{_timestamp()}.sql"
+    dest_abs = os.path.abspath(target["destination"])
+    dump_path = os.path.join(target["destination"], archive_name)
+
+    host = target.get("host", "localhost")
+    port = target.get("port", 5432)
+    user = target.get("user", "postgres")
+    password = target.get("password", "")
+    db_name = target["source"]
+
+    env = os.environ.copy()
+    if password:
+        env["PGPASSWORD"] = password
+
+    cmd = [
+        "pg_dump",
+        "-h", host,
+        "-p", str(port),
+        "-U", user,
+        "-d", db_name,
+        "-f", dump_path,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        raise RuntimeError(f"pg_dump failed: {result.stderr}")
+
+    # Compress the SQL dump
+    archive_path = f"{dump_path}.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as tar:
+        tar.add(dump_path, arcname=os.path.basename(dump_path))
+    os.remove(dump_path)
+
+    return archive_path
+
+
+def backup_sqlite(target):
+    """Creates a safe, consistent snapshot of a SQLite DB file using the
+    sqlite3 .backup command, then compresses it."""
+    os.makedirs(target["destination"], exist_ok=True)
+    snapshot_name = f"{target['name']}-{_timestamp()}.db"
+    dest_abs = os.path.abspath(target["destination"])
+    snapshot_path = os.path.join(target["destination"], snapshot_name)
+
+    cmd = ["sqlite3", target["source"], f".backup '{snapshot_path}'"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"SQLite backup failed: {result.stderr}")
+
+    archive_path = f"{snapshot_path}.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as tar:
+        tar.add(snapshot_path, arcname=os.path.basename(snapshot_path))
+    os.remove(snapshot_path)
+
+    return archive_path
+
+
 def run_backup(target):
     if target["type"] == "directory":
         return backup_directory(target)
     elif target["type"] == "volume":
         return backup_volume(target)
+    elif target["type"] == "postgres":
+        return backup_postgres(target)
+    elif target["type"] == "sqlite":
+        return backup_sqlite(target)
     else:
-        raise NotImplementedError(
-            f"Backup type '{target['type']}' not implemented yet (coming in a later milestone)"
-        )
+        raise NotImplementedError(f"Backup type '{target['type']}' not implemented")
