@@ -61,11 +61,37 @@ remote:
   encrypt: true
 ```
 
+## Restoring a backup
+
+Restore a target from its most recent local backup:
+```bash
+python -m backbone.cli restore --config config.yaml --target my-app-data
+```
+
+Restore from a specific local file:
+```bash
+python -m backbone.cli restore --config config.yaml --target my-app-data --file ./backups/my-app-data-20260628-165400.tar.gz.age
+```
+
+Restore by downloading from remote storage first:
+```bash
+python -m backbone.cli restore --config config.yaml --target my-app-data --from-remote --file my-app-data-20260628-165400.tar.gz.age
+```
+
+## Scheduling automatic backups
+
+Run backups on a recurring cron schedule (stays running in the foreground):
+```bash
+python -m backbone.cli schedule --config config.yaml --cron "0 2 * * *"
+```
+
+Cron format: `minute hour day month day_of_week`. Example: `"0 2 * * *"` runs daily at 2am.
+
 ## Roadmap
 
 - [x] Local backup engine (directory + volume)
 - [x] Encryption (age) + remote storage (Backblaze B2)
 - [x] Postgres/SQLite-aware backups
-- [ ] Scheduling + restore command
+- [x] Scheduling + restore command
 - [ ] Notifications + retention policy
 - [ ] Dockerized CLI + CI pipeline

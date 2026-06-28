@@ -112,3 +112,85 @@ def run_backup(target):
         return backup_sqlite(target)
     else:
         raise NotImplementedError(f"Backup type '{target['type']}' not implemented")
+
+
+def restore_directory(archive_path, target):
+    """Extracts a directory archive to its original source location
+    (or a custom destination if provided)."""
+    dest = target.get("restore_to", os.path.dirname(target["source"]) or ".")
+    with tarfile.open(archive_path, "r:gz") as tar:
+        tar.extractall(path=dest)
+    return dest
+
+
+def restore_volume(archive_path, target):
+    """Restores a tar.gz archive into a Docker volume."""
+    archive_abs = os.path.abspath(archive_path)
+    archive_dir = os.path.dirname(archive_abs)
+    archive_name = os.path.basename(archive_abs)
+
+    cmd = [
+        "docker", "run", "--rm",
+        "-v", f"{target['source']}:/data",
+        "-v", f"{archive_dir}:/backup",
+        "alpine",
+        "tar", "xzf", f"/backup/{archive_name}", "-C", "/data"
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Docker restore failed: {result.stderr}")
+    return target["source"]
+
+
+def restore_postgres(archive_path, target):
+    """Extracts a .sql.tar.gz dump and restores it with psql."""
+    extract_dir = os.path.dirname(archive_path)
+    with tarfile.open(archive_path, "r:gz") as tar:
+        tar.extractall(path=extract_dir)
+        sql_filename = tar.getnames()[0]
+    sql_path = os.path.join(extract_dir, sql_filename)
+
+    host = target.get("host", "localhost")
+    port = target.get("port", 5432)
+    user = target.get("user", "postgres")
+    password = target.get("password", "")
+    db_name = target["source"]
+
+    env = os.environ.copy()
+    if password:
+        env["PGPASSWORD"] = password
+
+    cmd = ["psql", "-h", host, "-p", str(port), "-U", user, "-d", db_name, "-f", sql_path]
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        raise RuntimeError(f"psql restore failed: {result.stderr}")
+
+    os.remove(sql_path)
+    return db_name
+
+
+def restore_sqlite(archive_path, target):
+    """Extracts a .db.tar.gz snapshot and copies it over the target source."""
+    extract_dir = os.path.dirname(archive_path)
+    with tarfile.open(archive_path, "r:gz") as tar:
+        tar.extractall(path=extract_dir)
+        db_filename = tar.getnames()[0]
+    extracted_db_path = os.path.join(extract_dir, db_filename)
+
+    dest = target.get("restore_to", target["source"])
+    shutil.copy2(extracted_db_path, dest)
+    os.remove(extracted_db_path)
+    return dest
+
+
+def run_restore(archive_path, target):
+    if target["type"] == "directory":
+        return restore_directory(archive_path, target)
+    elif target["type"] == "volume":
+        return restore_volume(archive_path, target)
+    elif target["type"] == "postgres":
+        return restore_postgres(archive_path, target)
+    elif target["type"] == "sqlite":
+        return restore_sqlite(archive_path, target)
+    else:
+        raise NotImplementedError(f"Restore type '{target['type']}' not implemented")
