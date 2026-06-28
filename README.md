@@ -2,13 +2,13 @@
 
 ![CI](https://github.com/mrdrisk/backbone/actions/workflows/ci.yml/badge.svg)
 
-A simple, self-hostable backup tool for your homelab. Backbone automatically backs up your files, Docker volumes, and databases, encrypts them so only you can read them, and uploads them to cloud storage — all on a schedule, with a Discord notification when it's done.
+A simple, self-hostable backup tool for your homelab. Backbone automatically backs up your files, Docker volumes, and databases, encrypts them so only you can read them, and uploads them to cloud storage, all on a schedule, with a Discord notification when it's done.
 
-Named after the Gojira song from their album *From Mars to Sirius*.
+Named after the Gojira song from their acclaimed 2005 album *From Mars to Sirius*.
 
 ## Why this exists
 
-If you're running anything at home — a Docker app, a small database, a folder of files you care about — eventually you'll lose something to a bad update, a dead drive, or a fat-fingered `rm -rf`. Backbone exists so that doesn't have to be a disaster: it takes regular, encrypted, off-site backups automatically, and gives you a one-command way to restore.
+If you're running anything at home; a Docker app, a small database, a folder of files you care about; eventually you'll lose something to a bad update, a dead drive, or a fat-fingered `rm -rf`. Backbone exists so that doesn't have to be a disaster: it takes regular, encrypted, off-site backups automatically, and gives you a one-command way to restore.
 
 ## What it does
 
@@ -100,7 +100,7 @@ age --version
 age-keygen -o backbone-key.txt
 ```
 
-This creates a private key file (`backbone-key.txt`) and prints a public key starting with `age1...` — copy that public key, you'll need it in a minute.
+This creates a private key file (`backbone-key.txt`) and prints a public key starting with `age1...`; copy that public key, you'll need it in a minute.
 
 **Keep `backbone-key.txt` safe and private.** It's the only thing that can decrypt your backups. If you lose it, your backups become unreadable. It's already excluded from git so it never gets accidentally uploaded anywhere.
 
@@ -234,5 +234,5 @@ All planned milestones are complete:
 
 ## A note on security
 
-- Your private encryption key (`backbone-key.txt`) and `.env` file are never committed to git — keep them backed up somewhere separate from your actual backups (a password manager or an offline USB drive works well)
-- Backups are encrypted *before* they're uploaded, so even if your cloud storage account were ever compromised, your data stays unreadable without your private key
+- Your private encryption key (`backbone-key.txt`) and `.env` file are never committed to git, so keep them backed up somewhere separate from your actual backups (a password manager or an offline USB drive works well).
+- Backups are encrypted *before* they're uploaded, so even if your cloud storage account were ever compromised, your data stays unreadable without your private key.
